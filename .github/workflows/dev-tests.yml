@@ -1,0 +1,60 @@
+name: Pruebas en dev
+
+on:
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-24.04
+    env:
+      CI: "true"
+      DATABASE_PROVIDER: postgres
+      TEST_DATABASE_URL: postgresql://portfolio:portfolio@localhost:5433/portfolio_test
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: portfolio
+          POSTGRES_PASSWORD: portfolio
+          POSTGRES_DB: portfolio_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U portfolio -d portfolio_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v6
+      - name: Configurar Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+      - name: Instalar dependencias
+        run: npm ci
+      - name: Revisar tipos
+        run: npm run typecheck
+      - name: Pruebas unitarias
+        run: npm run test:unit
+      - name: Pruebas de integración
+        run: npm run test:integration
+      - name: Compilar
+        run: npm run build
+      - name: Instalar Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Pruebas E2E
+        run: npm run test:e2e
+      - name: Guardar reporte E2E si falla
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: playwright-report
+          path: playwright-report/
+          if-no-files-found: ignore
