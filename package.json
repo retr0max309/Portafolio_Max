@@ -1,0 +1,25 @@
+{
+  "name": "portafolio-max",
+  "private": true,
+  "type": "module",
+  "workspaces": ["apps/web", "apps/api"],
+  "scripts": {
+    "dev:web": "npm run dev -w @portafolio/web",
+    "dev:api": "npm run dev -w @portafolio/api",
+    "build": "npm run build -w @portafolio/api && npm run build -w @portafolio/web",
+    "typecheck": "npm run typecheck -w @portafolio/api && npm run typecheck -w @portafolio/web && tsc --noEmit -p tsconfig.tests.json",
+    "test:unit": "vitest run apps/api/test/unit",
+    "test:integration": "vitest run apps/api/test/integration",
+    "test:e2e": "playwright test",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "db:seed": "tsx scripts/seed.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.1",
+    "@types/node": "26.6.6",
+    "supabase": "3.2.0",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "vitest": "5.1.1"
+  }
+}

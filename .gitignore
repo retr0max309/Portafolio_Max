@@ -1,3 +1,15 @@
-EVALUACION_CV.md
 tmp/
+supabase/.temp/
 __pycache__/
+
+# Next.js, Node.js and local configuration
+node_modules/
+.next/
+dist/
+coverage/
+playwright-report/
+test-results/
+.env
+.env.production
+.env.*.local
+*.tsbuildinfo
