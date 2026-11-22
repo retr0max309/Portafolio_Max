@@ -13,3 +13,17 @@ test-results/
 .env.production
 .env.*.local
 *.tsbuildinfo
+
+# Terraform local state, downloaded providers and private values
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+!*.tfvars.example
+crash.log
+infra/terraform/known_hosts
+
+# Private SSH and OCI API keys must remain outside Git
+*.key
+*.pem
