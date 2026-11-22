@@ -46,6 +46,16 @@ jobs:
           printf '%s' "$OCI_PRIVATE_KEY_PEM" > "$RUNNER_TEMP/oci_api_key.pem"
           chmod 600 "$RUNNER_TEMP/oci_api_key.pem"
           echo "OCI_PRIVATE_KEY_PATH=$RUNNER_TEMP/oci_api_key.pem" >> "$GITHUB_ENV"
+          mkdir -p "$HOME/.oci"
+          {
+            printf '[DEFAULT]\n'
+            printf 'user=%s\n' "$OCI_USER_OCID"
+            printf 'fingerprint=%s\n' "$OCI_FINGERPRINT"
+            printf 'tenancy=%s\n' "$OCI_TENANCY_OCID"
+            printf 'region=%s\n' "$OCI_REGION"
+            printf 'key_file=%s\n' "$RUNNER_TEMP/oci_api_key.pem"
+          } > "$HOME/.oci/config"
+          chmod 600 "$HOME/.oci/config"
       - name: Inicializar estado remoto y validar
         run: |
           terraform init -input=false
