@@ -35,7 +35,7 @@ jobs:
       - name: Descargar código
         uses: actions/checkout@v6
       - name: Configurar Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: 1.16.6
           terraform_wrapper: false
