@@ -1,0 +1,8 @@
+region              = "sa-saopaulo-1"
+tenancy_ocid        = "<OCID_DEL_TENANCY>"
+compartment_ocid    = "<OCID_DEL_COMPARTIMENTO_RAIZ>"
+# Terraform consulta el nombre exacto del AD 1 a OCI.
+ssh_public_key_path = "portfolio.pub"
+ssh_ingress_cidr    = "<TU_IP_PUBLICA>/32"
+
+shape = "VM.Standard.E2.2"

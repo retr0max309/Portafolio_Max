@@ -54,6 +54,8 @@ npm run test:e2e
 
 Hay tres pruebas unitarias, tres de integración y cuatro E2E. Integración y E2E usan la base local `portfolio_test`, nunca el proyecto alojado. Para E2E, los puertos 3000 y 3001 deben estar libres; detén los servidores de desarrollo antes de ejecutarlas.
 
-## Próximas etapas
+## Automatización y sitio público
 
-El workflow de GitHub Actions ejecuta las pruebas en cada push a `dev`. Los Dockerfile y `compose.prod.yml` están listos para publicación manual: consulta [docs/publicar-dockerhub.md](docs/publicar-dockerhub.md). Terraform para Oracle Cloud y la configuración de la VM quedan para la etapa siguiente.
+Cada push a `dev` ejecuta tipos, pruebas unitarias, de integración, E2E y compilación. Cada push a `main` ejecuta Terraform sobre un estado remoto en OCI Object Storage, publica las imágenes de API y web en Docker Hub con la etiqueta `sha-<commit>` y las despliega en la VM con OCI Run Command. La página pública está en [http://168.138.148.187](http://168.138.148.187). El puerto 443 está preparado en la red, pero HTTPS requiere un dominio y certificado.
+
+Consulta [la publicación en Docker Hub](docs/publicar-dockerhub.md) y [el despliegue en Oracle Cloud](docs/despliegue-oracle.md) para entender los comandos, los secretos y la función de cada etapa. El Docker local en `localhost:8081` es independiente de la VM.
