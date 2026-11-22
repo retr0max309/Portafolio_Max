@@ -81,7 +81,7 @@ Mientras la VM y los contenedores sigan activos, el portafolio seguirá disponib
 
 ## 4. Pipeline de `main`
 
-El workflow [`main-release.yml`](../.github/workflows/main-release.yml) se ejecuta con cada push a `main` o manualmente desde GitHub Actions. Primero usa Terraform para revisar y aplicar la infraestructura. Si el plan propone borrar o reemplazar un recurso, se detiene: evita destruir la VM por accidente. Después Buildx construye la API y la web para AMD64 y ARM64 y publica cada imagen en Docker Hub con `latest` y `sha-<commit>`.
+El workflow [`main-release.yml`](../.github/workflows/main-release.yml) se ejecuta con cada push a `main` o manualmente desde GitHub Actions. Primero usa Terraform para revisar y aplicar la infraestructura. Si el plan propone borrar o reemplazar un recurso, se detiene: evita destruir la VM por accidente. Después Buildx construye la API y la web para AMD64, la arquitectura de la VM, y publica cada imagen en Docker Hub con `latest` y `sha-<commit>`.
 
 La última etapa envía a OCI Run Command una orden que ejecuta el script `/usr/local/sbin/portafolio-release` dentro de Ubuntu. Ese script descarga el `compose.prod.yml` del commit publicado, fija `IMAGE_TAG=sha-<commit>`, descarga ambas imágenes y espera su estado saludable. La API mantiene su configuración de Supabase en `/opt/portafolio/.env.production`, archivo que nunca entra en Git ni en el comando remoto. Al final Actions consulta la página por HTTP.
 
