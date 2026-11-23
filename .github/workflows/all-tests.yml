@@ -44,6 +44,8 @@ jobs:
         run: npm run typecheck
       - name: Pruebas unitarias
         run: npm run test:unit
+      - name: Pruebas del proxy de Cloudflare
+        run: node --test cloudflare/worker.test.mjs
       - name: Pruebas de integración
         run: npm run test:integration
       - name: Compilar

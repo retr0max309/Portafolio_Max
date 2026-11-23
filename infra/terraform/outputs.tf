@@ -9,8 +9,13 @@ output "instance_ocid" {
 }
 
 output "http_url" {
-  description = "URL inicial del portafolio. HTTPS requiere la etapa de dominio y proxy."
+  description = "URL HTTP de respaldo para la IP publica."
   value       = "http://${oci_core_instance.portfolio.public_ip}"
+}
+
+output "https_origin_url" {
+  description = "Origen HTTPS servido por Nginx en el puerto 443 de la VM."
+  value       = "https://portafolio.${replace(oci_core_instance.portfolio.public_ip, ".", "-")}.sslip.io"
 }
 
 output "ssh_command" {

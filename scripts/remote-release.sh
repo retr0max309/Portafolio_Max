@@ -36,5 +36,11 @@ cd "$APP_DIR"
 docker compose --env-file .env.production -f compose.prod.yml config --quiet
 docker compose --env-file .env.production -f compose.prod.yml pull --quiet
 docker compose --env-file .env.production -f compose.prod.yml up -d --no-build --wait --quiet-pull
-curl --fail --silent --show-error --max-time 20 http://127.0.0.1/ >/dev/null
+curl --fail --silent --show-error --max-time 20 http://127.0.0.1:8080/ >/dev/null
+if grep -q '^PUBLIC_HOST=' "$ENV_FILE"; then
+  PUBLIC_HOST="$(sed -n 's/^PUBLIC_HOST=//p' "$ENV_FILE" | tail -n 1 | tr -d '\r')"
+  curl --fail --silent --show-error --max-time 20 \
+    --resolve "${PUBLIC_HOST}:443:127.0.0.1" \
+    "https://${PUBLIC_HOST}/" >/dev/null
+fi
 echo "Release sha-${COMMIT_SHA} healthy"
