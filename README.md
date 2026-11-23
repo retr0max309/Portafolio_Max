@@ -58,4 +58,4 @@ Hay tres pruebas unitarias, tres de integración y cuatro E2E. Integración y E2
 
 [`all-tests.yml`](.github/workflows/all-tests.yml) ejecuta tipos, pruebas unitarias, integración, E2E y compilación en cada push a `dev`. [`terraform-vm.yml`](.github/workflows/terraform-vm.yml) repite las pruebas en cada push a `main`: si fallan, no despliega. Después Terraform revisa la VM, Docker Hub recibe las imágenes `sha-<commit>` y OCI Run Command las despliega. Nginx y Let's Encrypt sirven HTTPS en el puerto 443 de la VM. La dirección pública del proyecto es [https://portafolio.168-138-148-187.sslip.io/](https://portafolio.168-138-148-187.sslip.io/).
 
-Consulta [la publicación en Docker Hub](docs/publicar-dockerhub.md) y [el despliegue en Oracle Cloud](docs/despliegue-oracle.md) para entender los comandos, los secretos y la función de cada etapa. El Docker local en `localhost:8081` es independiente de la VM.
+Consulta [la guía del despliegue HTTPS en Oracle Cloud](GUIA_HTTPS_ORACLE.txt) para entender los scripts y la función de cada etapa. El Docker local en `localhost:8081` es independiente de la VM.
