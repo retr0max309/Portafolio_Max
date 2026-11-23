@@ -27,14 +27,14 @@ Confirma que `DOCKERHUB_USERNAME` coincide con tu usuario de Docker Hub y que `S
 
 ## 3. Construir y probar localmente
 
-Para la prueba local, usa el puerto 8080 sin cambiar el puerto 80 previsto para la VM:
+Para la prueba local, usa el puerto 8081. En la VM, el contenedor web usa el puerto local 8080 y Nginx publica 80/443:
 
 ```powershell
-$env:WEB_PORT = '8080'
+$env:WEB_PORT = '8081'
 docker compose --env-file .env.production -f compose.prod.yml build
 docker compose --env-file .env.production -f compose.prod.yml up -d --wait
 docker compose --env-file .env.production -f compose.prod.yml ps
-Invoke-WebRequest http://localhost:8080
+Invoke-WebRequest http://localhost:8081 -UseBasicParsing
 docker compose --env-file .env.production -f compose.prod.yml down
 Remove-Item Env:\WEB_PORT
 ```
@@ -58,6 +58,6 @@ docker buildx build --platform linux/amd64,linux/arm64 -f Dockerfile.api -t "${d
 docker buildx build --platform linux/amd64,linux/arm64 -f Dockerfile.web -t "${dockerHubUser}/portafolio-web:${imageTag}" --push .
 ```
 
-`--push` publica directamente las imágenes multiarquitectura. En la VM, establece `IMAGE_TAG=v1.0.0` y `WEB_PORT=80` en `.env.production`, copia `compose.prod.yml` y ejecuta `docker compose --env-file .env.production -f compose.prod.yml pull` seguido de `docker compose --env-file .env.production -f compose.prod.yml up -d --no-build --wait`.
+`--push` publica directamente las imágenes multiarquitectura. En la VM, establece `IMAGE_TAG=v1.0.0` y `WEB_PORT=8080` en `.env.production`, copia `compose.prod.yml` y ejecuta `docker compose --env-file .env.production -f compose.prod.yml pull` seguido de `docker compose --env-file .env.production -f compose.prod.yml up -d --no-build --wait`. Nginx recibe las conexiones públicas en 80/443 y reenvía al contenedor web local.
 
 El workflow de `dev` no usa credenciales de Docker Hub. El de `main` usa el secreto `DOCKERHUB_TOKEN` para la publicación automática.

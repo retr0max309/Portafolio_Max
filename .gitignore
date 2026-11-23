@@ -12,6 +12,8 @@ test-results/
 .env
 .env.production
 .env.*.local
+.dev.vars*
+.wrangler/
 *.tsbuildinfo
 
 # Terraform local state, downloaded providers and private values

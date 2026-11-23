@@ -17,7 +17,7 @@ La prueba en `localhost:8081` confirma que las imágenes funcionan en tu computa
 | VM Ubuntu 24.04 | Ejecuta Docker y el portafolio. Usa la forma AMD fija `VM.Standard.E2.2` de tus capturas: 2 OCPU y 16 GB, compatible con tu imagen `linux/amd64`. |
 | IP pública | Dirección que usarán SSH y los visitantes. |
 
-La regla del puerto 443 **todavía no crea HTTPS**. Para servir HTTPS faltará un dominio y un proxy con certificado. La primera publicación se prueba con `http://<IP_PUBLICA>` por el puerto 80.
+La lista de seguridad abre 80 y 443. Nginx en Ubuntu recibe esos puertos: redirige el nombre gratuito `portafolio.168-138-148-187.sslip.io` de HTTP a HTTPS y entrega el certificado de Let's Encrypt. El Worker de Cloudflare ofrece la URL pública estable `portafolio-max.maximilianoturderacolque.workers.dev` y consulta el origen mediante HTTPS en el puerto 443 de la VM.
 
 En tus capturas seleccionas `VM.Standard.E2.2` (forma fija AMD de 2 OCPU y 16 GB), la VCN existente `vcn-20260924-1027` en el compartimento raíz y una subred nueva `10.0.0.0/24`. Esta configuración Terraform usa la misma forma de VM, pero **crea una VCN nueva** y una subred propia en el compartimento raíz, como indicaste después. La forma fija no lleva `shape_config`: sus CPU y memoria ya están determinadas por el nombre de la forma.
 
@@ -48,11 +48,11 @@ terraform plan
 
 ## 2. Script Bash: configurar y desplegar en la VM
 
-[`scripts/deploy-vm.sh`](../scripts/deploy-vm.sh) se ejecuta **dentro de Ubuntu** con `sudo`. Instala Git, Docker Engine y Compose desde el repositorio oficial de Docker; añade reglas `iptables` para SSH desde tu IP y los puertos 80/443; guarda esas reglas para reinicios. Después copia los archivos de producción a `/opt/portafolio`, descarga las imágenes de Docker Hub y arranca la API y la web. Se puede volver a ejecutar para actualizar las imágenes, siempre que `IMAGE_TAG` apunte a una etiqueta publicada.
+[`scripts/deploy-vm.sh`](../scripts/deploy-vm.sh) se ejecuta **dentro de Ubuntu** con `sudo`. Instala Git, Docker Engine y Compose desde el repositorio oficial de Docker; añade reglas `iptables` para SSH desde tu IP y los puertos 80/443; guarda esas reglas para reinicios. Después copia los archivos de producción a `/opt/portafolio`, descarga las imágenes de Docker Hub y arranca la API y la web. El frontend solo publica `127.0.0.1:8080` en la VM. [`scripts/configure-https-vm.sh`](../scripts/configure-https-vm.sh) instala Nginx y Certbot, obtiene el certificado gratuito, conecta los puertos públicos con el frontend y activa la renovación automática.
 
-El firewall del sistema y la security list de OCI son dos filtros distintos. La lista de OCI limita SSH a tu IP y permite HTTP/HTTPS. El script coloca la regla SSH específica **antes** de la regla de bloqueo para no cortar el acceso. Docker gestiona reglas propias para los puertos publicados; por eso también debe mantenerse correcta la security list de OCI. El puerto 443 queda abierto, pero el sitio todavía no ofrece HTTPS: hace falta dominio, proxy y certificado.
+El firewall del sistema y la security list de OCI son dos filtros distintos. La lista de OCI limita SSH a tu IP y permite HTTP/HTTPS. El script coloca la regla SSH específica **antes** de la regla de bloqueo para no cortar el acceso. Docker gestiona reglas propias para los puertos publicados; por eso el contenedor web se limita a `127.0.0.1:8080`. Nginx es el único servicio público en 80/443.
 
-Antes de cada despliegue, revisa `.env.production` en tu computadora: `DOCKERHUB_USERNAME=retr0max309`, `IMAGE_TAG=v1.0.0`, `WEB_PORT=80`, `SUPABASE_URL` y `SUPABASE_PUBLISHABLE_KEY`. Ese archivo está ignorado por Git y se copia a la VM con permisos `0600` bajo `/opt/portafolio`. **No publiques su contenido ni la clave privada SSH.**
+Antes de cada despliegue, revisa `.env.production` en tu computadora: `DOCKERHUB_USERNAME=retr0max309`, `IMAGE_TAG=v1.0.0`, `WEB_PORT=8080`, `PUBLIC_HOST=portafolio.168-138-148-187.sslip.io`, `SUPABASE_URL` y `SUPABASE_PUBLISHABLE_KEY`. Ese archivo está ignorado por Git y se copia a la VM con permisos `0600` bajo `/opt/portafolio`. **No publiques su contenido ni la clave privada SSH.**
 
 En PowerShell, desde la raíz del repositorio, puedes repetir la copia y la ejecución cuando cambie la versión de las imágenes:
 
@@ -61,21 +61,22 @@ $sshKey = 'C:\Users\NITRO\Documents\Proyecto-Sistemas III\TareasFinales\ssh-key-
 $knownHosts = Join-Path (Get-Location) 'infra\terraform\known_hosts'
 $vm = 'ubuntu@168.138.148.187'
 ssh -i $sshKey -o "UserKnownHostsFile=$knownHosts" $vm 'mkdir -p ~/portafolio-stage/scripts && chmod 700 ~/portafolio-stage ~/portafolio-stage/scripts'
-scp -i $sshKey -o "UserKnownHostsFile=$knownHosts" scripts/deploy-vm.sh scripts/remote-release.sh "${vm}:portafolio-stage/scripts/"
+scp -i $sshKey -o "UserKnownHostsFile=$knownHosts" scripts/deploy-vm.sh scripts/remote-release.sh scripts/configure-https-vm.sh "${vm}:portafolio-stage/scripts/"
 scp -i $sshKey -o "UserKnownHostsFile=$knownHosts" compose.prod.yml .env.production "${vm}:portafolio-stage/"
 ssh -i $sshKey -o "UserKnownHostsFile=$knownHosts" $vm 'chmod 600 ~/portafolio-stage/.env.production && sudo bash ~/portafolio-stage/scripts/deploy-vm.sh 181.115.171.183/32'
+ssh -i $sshKey -o "UserKnownHostsFile=$knownHosts" $vm 'sudo bash ~/portafolio-stage/scripts/configure-https-vm.sh portafolio.168-138-148-187.sslip.io ~/portafolio-stage/compose.prod.yml'
 ```
 
-`ssh` abre la sesión remota, `scp` copia los archivos y `sudo bash` ejecuta la instalación en Ubuntu. El script usa `docker compose pull` y luego `up -d --no-build --wait`: descarga imágenes ya publicadas, las arranca sin compilarlas en la VM y espera a que estén listas. Además instala `remote-release.sh` como comando root para los despliegues automáticos. No ejecuta `docker compose down` en tu PC ni afecta a `localhost:8081`. Si cambia tu IP pública, primero actualiza `SSH_INGRESS_CIDR` en GitHub y ejecuta el workflow de `main` para actualizar la security list de OCI; después configura el firewall de Ubuntu con el nuevo `IP/32`.
+`ssh` abre la sesión remota, `scp` copia los archivos y `sudo bash` ejecuta la instalación en Ubuntu. El script usa `docker compose pull` y luego `up -d --no-build --wait`: descarga imágenes ya publicadas, las arranca sin compilarlas en la VM y espera a que estén listas. Además instala `remote-release.sh` como comando root para los despliegues automáticos. El segundo script configura Nginx, solicita el certificado mediante un desafío HTTP en el puerto 80 y deja el puerto 443 con HTTPS. No ejecuta `docker compose down` en tu PC ni afecta a `localhost:8081`. Si cambia tu IP pública, primero actualiza `SSH_INGRESS_CIDR` en GitHub y ejecuta el workflow de `main` para actualizar la security list de OCI; después configura el firewall de Ubuntu con el nuevo `IP/32`.
 
 ## 3. Comprobar el acceso público
 
 ```powershell
-$vmIp = '<IP_PUBLICA_DE_TERRAFORM>'
-Invoke-WebRequest "http://$vmIp" -UseBasicParsing | Select-Object StatusCode
+Invoke-WebRequest 'https://portafolio.168-138-148-187.sslip.io/' -UseBasicParsing | Select-Object StatusCode
+Invoke-WebRequest 'https://portafolio-max.maximilianoturderacolque.workers.dev/' -UseBasicParsing | Select-Object StatusCode
 ```
 
-Después abre `http://<IP_PUBLICA>` en un navegador, revisa proyectos y envía un mensaje de contacto. Comprueba el mensaje nuevo en la tabla `contact_messages` de Supabase. En la VM, `sudo docker compose --env-file /opt/portafolio/.env.production -f /opt/portafolio/compose.prod.yml ps` permite ver ambos contenedores. La ruta pública `/api/projects` no existe en Next.js; la web consulta esa ruta en NestJS dentro de la red de Compose.
+Después abre la URL de Cloudflare en un navegador, revisa proyectos y envía un mensaje de contacto. Comprueba el mensaje nuevo en la tabla `contact_messages` de Supabase. En la VM, `sudo docker compose --env-file /opt/portafolio/.env.production -f /opt/portafolio/compose.prod.yml ps` permite ver ambos contenedores. La ruta pública `/api/projects` no existe en Next.js; la web consulta esa ruta en NestJS dentro de la red de Compose.
 
 Mientras la VM y los contenedores sigan activos, el portafolio seguirá disponible sin tu PC. `restart: unless-stopped` en Compose ayuda a reiniciar los servicios si Docker o la VM se reinician.
 
@@ -83,6 +84,6 @@ Mientras la VM y los contenedores sigan activos, el portafolio seguirá disponib
 
 El workflow [`terraform-vm.yml`](../.github/workflows/terraform-vm.yml) se ejecuta con cada push a `main` o manualmente desde GitHub Actions. Primero reutiliza [`all-tests.yml`](../.github/workflows/all-tests.yml): tipos, tres unitarias, tres de integración, cuatro E2E y compilación. Si fallan, detiene la publicación. Después usa Terraform para revisar y aplicar la infraestructura. Si el plan propone borrar o reemplazar un recurso, también se detiene. Buildx construye la API y la web para AMD64, la arquitectura de la VM, y publica cada imagen en Docker Hub con `latest` y `sha-<commit>`.
 
-La última etapa envía a OCI Run Command una orden que ejecuta el script `/usr/local/sbin/portafolio-release` dentro de Ubuntu. Ese script descarga el `compose.prod.yml` del commit publicado, fija `IMAGE_TAG=sha-<commit>`, descarga ambas imágenes y espera su estado saludable. La API mantiene su configuración de Supabase en `/opt/portafolio/.env.production`, archivo que nunca entra en Git ni en el comando remoto. Al final Actions consulta la página por HTTP.
+La etapa de VM envía a OCI Run Command una orden que ejecuta el script `/usr/local/sbin/portafolio-release` dentro de Ubuntu. Ese script descarga el `compose.prod.yml` del commit publicado, fija `IMAGE_TAG=sha-<commit>`, descarga ambas imágenes y espera su estado saludable. La API mantiene su configuración de Supabase en `/opt/portafolio/.env.production`, archivo que nunca entra en Git ni en el comando remoto. Actions comprueba el origen por HTTPS. La última tarea del mismo workflow publica el Worker de Cloudflare y comprueba su URL pública.
 
-GitHub Actions usa los secretos `DOCKERHUB_TOKEN` y `OCI_PRIVATE_KEY_PEM`; las variables `DOCKERHUB_USERNAME`, `OCI_TENANCY_OCID`, `OCI_USER_OCID`, `OCI_FINGERPRINT`, `OCI_REGION`, `UBUNTU_IMAGE_OCID` y `SSH_INGRESS_CIDR` identifican los recursos y parámetros. El PEM privado se escribe solo en el runner temporal y se borra al terminar. Para revisar una ejecución, abre **GitHub → Actions → Terraform y VM** y mira las cuatro tareas `verify`, `infrastructure`, `publish` y `deploy`.
+GitHub Actions usa los secretos `DOCKERHUB_TOKEN`, `OCI_PRIVATE_KEY_PEM` y `CLOUDFLARE_API_TOKEN`; las variables `DOCKERHUB_USERNAME`, `OCI_TENANCY_OCID`, `OCI_USER_OCID`, `OCI_FINGERPRINT`, `OCI_REGION`, `UBUNTU_IMAGE_OCID`, `SSH_INGRESS_CIDR` y `CLOUDFLARE_ACCOUNT_ID` identifican recursos y parámetros. El PEM privado se escribe solo en el runner temporal y se borra al terminar. Para revisar una ejecución, abre **GitHub → Actions → Terraform y VM** y mira `verify`, `infrastructure`, `publish`, `deploy` y `cloudflare`.

@@ -145,5 +145,21 @@ jobs:
           --instance-id '${{ needs.infrastructure.outputs.instance_ocid }}'
           --compartment-id '${{ vars.OCI_TENANCY_OCID }}'
           --tag 'sha-${{ github.sha }}'
-      - name: Comprobar página pública
-        run: curl --fail --silent --show-error --retry 5 --retry-delay 5 "http://${{ needs.infrastructure.outputs.public_ip }}/" > /dev/null
+      - name: Comprobar HTTPS en la VM
+        run: curl --fail --silent --show-error --retry 5 --retry-delay 5 "https://portafolio.168-138-148-187.sslip.io/" > /dev/null
+
+  cloudflare:
+    needs: deploy
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v6
+      - name: Publicar Worker de Cloudflare
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: cloudflare
+          command: deploy
+      - name: Comprobar página en Cloudflare
+        run: curl --fail --silent --show-error --retry 5 --retry-delay 5 --user-agent 'PortafolioMax-Healthcheck/1.0' "https://portafolio-max.maximilianoturderacolque.workers.dev/" > /dev/null

@@ -31,8 +31,8 @@ for name in DOCKERHUB_USERNAME IMAGE_TAG WEB_PORT SUPABASE_URL SUPABASE_PUBLISHA
     exit 1
   fi
 done
-if ! tr -d '\r' < "$ENV_FILE" | grep -Eq '^WEB_PORT=80$'; then
-  echo "En la VM, WEB_PORT debe ser 80 para publicar la pagina por HTTP." >&2
+if ! tr -d '\r' < "$ENV_FILE" | grep -Eq '^WEB_PORT=8080$'; then
+  echo "En la VM, WEB_PORT debe ser 8080 para que Nginx publique HTTP y HTTPS." >&2
   exit 1
 fi
 
@@ -83,5 +83,5 @@ cd "$APP_DIR"
 docker compose --env-file .env.production -f compose.prod.yml config --quiet
 docker compose --env-file .env.production -f compose.prod.yml pull
 docker compose --env-file .env.production -f compose.prod.yml up -d --no-build --wait
-curl --fail --silent --show-error --max-time 20 http://127.0.0.1/ >/dev/null
-echo "Portafolio desplegado en HTTP puerto 80."
+curl --fail --silent --show-error --max-time 20 http://127.0.0.1:8080/ >/dev/null
+echo "Contenedores listos en el puerto local 8080. Configura Nginx para publicar HTTP y HTTPS."
