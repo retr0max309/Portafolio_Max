@@ -13,8 +13,8 @@ output "http_url" {
   value       = "http://${oci_core_instance.portfolio.public_ip}"
 }
 
-output "https_origin_url" {
-  description = "Origen HTTPS servido por Nginx en el puerto 443 de la VM."
+output "https_url" {
+  description = "URL HTTPS pública servida por Nginx en el puerto 443 de la VM."
   value       = "https://portafolio.${replace(oci_core_instance.portfolio.public_ip, ".", "-")}.sslip.io"
 }
 
