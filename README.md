@@ -56,6 +56,6 @@ Hay tres pruebas unitarias, tres de integración y cuatro E2E. Integración y E2
 
 ## Automatización y sitio público
 
-Cada push a `dev` ejecuta tipos, pruebas unitarias, de integración, E2E y compilación. Cada push a `main` ejecuta Terraform sobre un estado remoto en OCI Object Storage, publica las imágenes de API y web en Docker Hub con la etiqueta `sha-<commit>` y las despliega en la VM con OCI Run Command. La página pública está en [http://168.138.148.187](http://168.138.148.187). El puerto 443 está preparado en la red, pero HTTPS requiere un dominio y certificado.
+[`all-tests.yml`](.github/workflows/all-tests.yml) ejecuta tipos, pruebas unitarias, de integración, E2E y compilación en cada push a `dev`. [`terraform-vm.yml`](.github/workflows/terraform-vm.yml) repite esas pruebas en cada push a `main`: si fallan, no despliega. Después Terraform usa un estado remoto en OCI Object Storage, publica las imágenes de API y web en Docker Hub con la etiqueta `sha-<commit>` y las despliega en la VM con OCI Run Command. La página pública está en [http://168.138.148.187](http://168.138.148.187). El puerto 443 está preparado en la red, pero HTTPS requiere un dominio y certificado.
 
 Consulta [la publicación en Docker Hub](docs/publicar-dockerhub.md) y [el despliegue en Oracle Cloud](docs/despliegue-oracle.md) para entender los comandos, los secretos y la función de cada etapa. El Docker local en `localhost:8081` es independiente de la VM.

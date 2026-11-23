@@ -1,10 +1,10 @@
-# Publicación manual de main y Docker Hub
+# Publicación en main y Docker Hub
 
-El workflow `.github/workflows/dev-tests.yml` ejecuta tipos, pruebas unitarias, integración, compilación y E2E en cada push a `dev`. La publicación de `main` y Docker Hub queda a cargo del propietario.
+El workflow `.github/workflows/all-tests.yml` ejecuta tipos, pruebas unitarias, integración, compilación y E2E en cada push a `dev`. Al hacer push a `main`, `.github/workflows/terraform-vm.yml` repite esas pruebas, aplica Terraform, publica las imágenes AMD64 en Docker Hub y las despliega en la VM. Los comandos siguientes sirven para revisar o repetir el proceso manualmente.
 
 ## 1. Integrar dev en main
 
-Espera a que **Actions → Pruebas en dev** termine en verde. Después, desde la carpeta del repositorio:
+Espera a que **Actions → Todas las pruebas** termine en verde. Después, desde la carpeta del repositorio:
 
 ```powershell
 git fetch origin
@@ -60,4 +60,4 @@ docker buildx build --platform linux/amd64,linux/arm64 -f Dockerfile.web -t "${d
 
 `--push` publica directamente las imágenes multiarquitectura. En la VM, establece `IMAGE_TAG=v1.0.0` y `WEB_PORT=80` en `.env.production`, copia `compose.prod.yml` y ejecuta `docker compose --env-file .env.production -f compose.prod.yml pull` seguido de `docker compose --env-file .env.production -f compose.prod.yml up -d --no-build --wait`.
 
-Las imágenes se publican manualmente; el workflow de `dev` no usa credenciales de Docker Hub.
+El workflow de `dev` no usa credenciales de Docker Hub. El de `main` usa el secreto `DOCKERHUB_TOKEN` para la publicación automática.

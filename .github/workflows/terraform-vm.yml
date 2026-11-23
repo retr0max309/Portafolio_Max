@@ -1,4 +1,4 @@
-name: Publicar y desplegar main
+name: Terraform y VM
 
 on:
   push:
@@ -13,7 +13,11 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  verify:
+    uses: ./.github/workflows/all-tests.yml
+
   infrastructure:
+    needs: verify
     runs-on: ubuntu-24.04
     outputs:
       instance_ocid: ${{ steps.outputs.outputs.instance_ocid }}
